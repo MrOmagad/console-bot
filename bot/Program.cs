@@ -1,10 +1,115 @@
-﻿namespace bot
+﻿using static System.Console;
+using System.Reflection;
+
+namespace bot
 {
   internal class Program
   {
+    private const string ListOfCommands = "/start\n/help\n/info\n/menu\n/clear\n/exit";
+    private const string ListOfCommandExtended = ListOfCommands + "\n/echo [текст]\n";
+
     static void Main(string[] args)
     {
-      Console.WriteLine("Hello, World!");
+      WriteLine($"Привет!\n{ListOfCommands}");
+
+      bool started = false;
+      string name = "";
+
+      while (true)
+      {
+        WriteLine("\nВведите команду:");
+        string command = Console.ReadLine() ?? "";
+
+        if (command.Equals("/start"))
+        {
+          if (!started)
+          {
+            name = WelcomeToProgram();
+            started = true;
+          }
+          else
+          {
+            WriteLine($"{name}, программа уже работает");
+          }
+
+          continue;
+        }
+
+        if (!started)
+        {
+          WriteLine("Для доступа к другим командам сначала введите '/start'.");
+          continue;
+        }
+
+        if(command.StartsWith("/echo"))
+        {
+          string echoText = command[6..];
+
+          if (string.IsNullOrWhiteSpace(echoText))
+          {
+            WriteLine($"{name}, после /echo необходимо указать текст.");
+          }
+          else
+          {
+            WriteLine($"{echoText}");
+          }
+          continue;
+        }
+          if (command.Equals("/exit"))
+          {
+            WriteLine($"До свидания, {name}");
+            break;
+          }
+          SelectCommand(command, name);
+
+      }
     }
+
+    private static string WelcomeToProgram()
+    {
+      WriteLine("\nКак тебя зовут?");
+      string name = Console.ReadLine() ?? "";
+      WriteLine($"\nПривет, {name}!\nВыбери команду: \n{ListOfCommandExtended}");
+      return name;
+    }
+
+    private static void SelectCommand(string command, string name)
+    {
+      switch (command)
+      {
+        case "/help":
+          WriteLine($"{name}, ниже представлена справочная информация: \n\n" +
+            "/start - начать работу\n" +
+            "/help - справочная информация\n" +
+            "/info - информация о программе\n" +
+            "/echo [текс] - вывести текст\n" +
+            "/exit - выйти из программы\n" +
+            "/clear - очистить консоль"
+          );
+          break;
+
+        case "/info":
+          Version? version = Assembly.GetExecutingAssembly().GetName().Version;
+          WriteLine($"{name},\nВерсия программы - {version}\nДата сброки - 14.09.2026");
+          break;
+
+        case "/echo":
+          WriteLine($"{name}, используйте команду в формате: /echo [текст]");
+          break;
+
+        case "/clear":
+          Clear();
+          break;
+
+        case "/menu":
+          WriteLine($"\nСписок команд: \n{ListOfCommandExtended}");
+          break;
+
+        default:
+          WriteLine("Неверно набрана команда.");
+          break;
+      }
+    }
+
   }
 }
