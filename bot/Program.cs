@@ -6,7 +6,9 @@ namespace bot
   internal class Program
   {
     private const string ListOfCommands = "/start\n/help\n/info\n/menu\n/clear\n/exit";
-    private const string ListOfCommandExtended = ListOfCommands + "\n/echo [текст]\n";
+    private const string ListOfCommandExtended = "/start\n/help\n/info\n/menu\n/clear\n/echo [текст]\n/addtask\n/showtask\n/removetask\n/exit\n";
+
+    static List<string> tasks = new List<string>();
 
     static void Main(string[] args)
     {
@@ -105,10 +107,74 @@ namespace bot
           WriteLine($"\nСписок команд: \n{ListOfCommandExtended}");
           break;
 
+        case "/addtask":
+          AddTask();
+          break;
+
+        case "/showtask":
+          ShowTask(); 
+          break;
+
+        case "/removetask":
+          RemoveTask();
+          break;
+
         default:
           WriteLine("Неверно набрана команда.");
           break;
       }
+    }
+
+    private static void AddTask()
+    {
+      WriteLine("Введите описание задачи");
+      string task = ReadLine();
+      tasks.Add(task);
+      WriteLine("Задача добавлена!");
+    }
+
+    private static void ShowTask()
+    {
+      if (tasks.Count == 0)
+      {
+        WriteLine("У вас нет задач");
+        return;
+      }
+
+      WriteLine("Список задач:\n");
+
+      for (int i = 0; i < tasks.Count; i++)
+      {
+        WriteLine($"{i + 1}. {tasks[i]}");
+      }
+    }
+    private static void RemoveTask()
+    {
+      if (tasks.Count == 0)
+      {
+        WriteLine("Список задач пуст. Удалять нечего");
+        return;
+      }
+
+      ShowTask();
+
+      WriteLine("\nВведите номер задачи для удаления: ");
+      string input = ReadLine();
+
+      if (!int.TryParse(input, out int number))
+      {
+        WriteLine("Нужно ввести число.");
+        return;
+      }
+
+      if (number < 1 || number > tasks.Count)
+      {
+        WriteLine("Неверный номер задачи.");
+        return;
+      }
+
+      tasks.RemoveAt(number - 1);
+      WriteLine("Задача успешно удалена");
     }
 
   }
