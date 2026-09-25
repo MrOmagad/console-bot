@@ -1,5 +1,6 @@
-﻿using static System.Console;
-using System.Reflection;
+﻿using System.Reflection;
+using System.Xml.Linq;
+using static System.Console;
 
 namespace bot
 {
@@ -20,7 +21,7 @@ namespace bot
       while (true)
       {
         WriteLine("\nВведите команду:");
-        string command = Console.ReadLine() ?? "";
+        string command = ReadLine() ?? "";
 
         if (command.Equals("/start"))
         {
@@ -43,7 +44,7 @@ namespace bot
           continue;
         }
 
-        if(command.StartsWith("/echo"))
+        if (command.StartsWith("/echo"))
         {
           string echoText = command[6..];
 
@@ -57,16 +58,17 @@ namespace bot
           }
           continue;
         }
-          if (command.Equals("/exit"))
-          {
-            WriteLine($"До свидания, {name}");
-            break;
-          }
-          SelectCommand(command, name);
+        if (command.Equals("/exit"))
+        {
+          WriteLine($"До свидания, {name}");
+          break;
+        }
+        SelectCommand(command, name);
 
       }
     }
 
+    //ПРИВЕТСТВИЕ
     private static string WelcomeToProgram()
     {
       WriteLine("\nКак тебя зовут?");
@@ -74,25 +76,19 @@ namespace bot
       WriteLine($"\nПривет, {name}!\nВыбери команду: \n{ListOfCommandExtended}");
       return name;
     }
+    //ПРИВЕТСТВИЕ
 
+    //ВЫБОР КОМАНДЫ
     private static void SelectCommand(string command, string name)
     {
       switch (command)
       {
         case "/help":
-          WriteLine($"{name}, ниже представлена справочная информация: \n\n" +
-            "/start - начать работу\n" +
-            "/help - справочная информация\n" +
-            "/info - информация о программе\n" +
-            "/echo [текс] - вывести текст\n" +
-            "/exit - выйти из программы\n" +
-            "/clear - очистить консоль"
-          );
+          ShowHelp(name);
           break;
 
         case "/info":
-          Version? version = Assembly.GetExecutingAssembly().GetName().Version;
-          WriteLine($"{name},\nВерсия программы - {version}\nДата сброки - 14.09.2026");
+          ShowInfo(name);
           break;
 
         case "/echo":
@@ -112,7 +108,7 @@ namespace bot
           break;
 
         case "/showtask":
-          ShowTask(); 
+          ShowTask();
           break;
 
         case "/removetask":
@@ -124,7 +120,34 @@ namespace bot
           break;
       }
     }
+    //ВЫБОР КОМАНДЫ
 
+    //СПРАВОЧНАЯ ИНФОРМАЦИЯ О КОМАНДАХ
+    private static void ShowHelp(string name)
+    {
+      WriteLine($"{name}, ниже представлена справочная информация: \n\n" +
+        "/start - начать работу\n" +
+        "/help - справочная информация\n" +
+        "/info - информация о программе\n" +
+        "/echo [текс] - вывести текст\n" +
+        "/clear - очистить консоль\n" +
+        "/addtask - добавление задачи\n" +
+        "/showtask - список задач\n" +
+        "/removetask - удаление задачи\n" +
+        "/exit - выйти из программы\n"
+      );
+    }
+    //СПРАВОЧНАЯ ИНФОРМАЦИЯ О КОМАНДАХ
+
+    //ВЕРСИЯ И ДАТА СОЗДАНИЯ ПРОЕКТА
+    private static void ShowInfo(string name)
+    {
+      Version? version = Assembly.GetExecutingAssembly().GetName().Version;
+      WriteLine($"\n{name},\nВерсия программы - {version}\nДата сброки - 14.09.2026");
+    }
+    //ВЕРСИЯ И ДАТА СОЗДАНИЯ ПРОЕКТА
+
+    //ДОБАВЛЕНИЕ ЗАДАЧИ
     private static void AddTask()
     {
       WriteLine("Введите описание задачи");
@@ -132,7 +155,9 @@ namespace bot
       tasks.Add(task);
       WriteLine("Задача добавлена!");
     }
+    //ДОБАВЛЕНИЕ ЗАДАЧИ
 
+    //ВЫВОД СПИСКА ЗАДАЧ
     private static void ShowTask()
     {
       if (tasks.Count == 0)
@@ -148,6 +173,9 @@ namespace bot
         WriteLine($"{i + 1}. {tasks[i]}");
       }
     }
+    //ВЫВОД СПИСКА ЗАДАЧ
+
+    //УДАЛЕНИЕ ЗАДАЧИ 
     private static void RemoveTask()
     {
       if (tasks.Count == 0)
@@ -176,6 +204,6 @@ namespace bot
       tasks.RemoveAt(number - 1);
       WriteLine("Задача успешно удалена");
     }
-
+    //УДАЛЕНИЕ ЗАДАЧИ
   }
 }
