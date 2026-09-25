@@ -16,9 +16,10 @@ namespace bot
       WriteLine($"Привет!\n{ListOfCommands}");
 
       bool started = false;
+      bool isRunning = true;
       string name = "";
 
-      while (true)
+      while (isRunning)
       {
         WriteLine("\nВведите команду:");
         string command = ReadLine() ?? "";
@@ -61,9 +62,48 @@ namespace bot
         if (command.Equals("/exit"))
         {
           WriteLine($"До свидания, {name}");
+          isRunning = false;
           break;
         }
-        SelectCommand(command, name);
+
+        switch (command)
+        {
+          case "/help":
+            ShowHelp(name);
+            break;
+
+          case "/info":
+            ShowInfo(name);
+            break;
+
+          case "/echo":
+            WriteLine($"{name}, используйте команду в формате: /echo [текст]");
+            break;
+
+          case "/clear":
+            Clear();
+            break;
+
+          case "/menu":
+            WriteLine($"\nСписок команд: \n{ListOfCommandExtended}");
+            break;
+
+          case "/addtask":
+            AddTask();
+            break;
+
+          case "/showtask":
+            ShowTask();
+            break;
+
+          case "/removetask":
+            RemoveTask();
+            break;
+
+          default:
+            WriteLine("Неверно набрана команда.");
+            break;
+        }
 
       }
     }
@@ -79,47 +119,47 @@ namespace bot
     //ПРИВЕТСТВИЕ
 
     //ВЫБОР КОМАНДЫ
-    private static void SelectCommand(string command, string name)
-    {
-      switch (command)
-      {
-        case "/help":
-          ShowHelp(name);
-          break;
+    //private static void SelectCommand(string command, string name)
+    //{
+    //  switch (command)
+    //  {
+    //    case "/help":
+    //      ShowHelp(name);
+    //      break;
 
-        case "/info":
-          ShowInfo(name);
-          break;
+    //    case "/info":
+    //      ShowInfo(name);
+    //      break;
 
-        case "/echo":
-          WriteLine($"{name}, используйте команду в формате: /echo [текст]");
-          break;
+    //    case "/echo":
+    //      WriteLine($"{name}, используйте команду в формате: /echo [текст]");
+    //      break;
 
-        case "/clear":
-          Clear();
-          break;
+    //    case "/clear":
+    //      Clear();
+    //      break;
 
-        case "/menu":
-          WriteLine($"\nСписок команд: \n{ListOfCommandExtended}");
-          break;
+    //    case "/menu":
+    //      WriteLine($"\nСписок команд: \n{ListOfCommandExtended}");
+    //      break;
 
-        case "/addtask":
-          AddTask();
-          break;
+    //    case "/addtask":
+    //      AddTask();
+    //      break;
 
-        case "/showtask":
-          ShowTask();
-          break;
+    //    case "/showtask":
+    //      ShowTask();
+    //      break;
 
-        case "/removetask":
-          RemoveTask();
-          break;
+    //    case "/removetask":
+    //      RemoveTask();
+    //      break;
 
-        default:
-          WriteLine("Неверно набрана команда.");
-          break;
-      }
-    }
+    //    default:
+    //      WriteLine("Неверно набрана команда.");
+    //      break;
+    //  }
+    //}
     //ВЫБОР КОМАНДЫ
 
     //СПРАВОЧНАЯ ИНФОРМАЦИЯ О КОМАНДАХ
@@ -158,12 +198,12 @@ namespace bot
     //ДОБАВЛЕНИЕ ЗАДАЧИ
 
     //ВЫВОД СПИСКА ЗАДАЧ
-    private static void ShowTask()
+    private static bool ShowTask()
     {
       if (tasks.Count == 0)
       {
         WriteLine("У вас нет задач");
-        return;
+        return true;
       }
 
       WriteLine("Список задач:\n");
@@ -172,13 +212,14 @@ namespace bot
       {
         WriteLine($"{i + 1}. {tasks[i]}");
       }
+      return false;
     }
     //ВЫВОД СПИСКА ЗАДАЧ
 
     //УДАЛЕНИЕ ЗАДАЧИ 
     private static void RemoveTask()
     {
-      if (tasks.Count == 0)
+      if (ShowTask())
       {
         WriteLine("Список задач пуст. Удалять нечего");
         return;
