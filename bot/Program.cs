@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using System.Xml.Linq;
 using static System.Console;
 
 namespace bot
@@ -10,6 +9,8 @@ namespace bot
     private const string ListOfCommandExtended = "/start\n/help\n/info\n/menu\n/clear\n/echo [текст]\n/addtask\n/showtask\n/removetask\n/exit\n";
 
     static List<string> tasks = new List<string>();
+    static int taskCountLimit;
+    static int taskLengthLimit;
 
     static void Main(string[] args)
     {
@@ -21,92 +22,107 @@ namespace bot
 
       while (isRunning)
       {
-        WriteLine("\nВведите команду:");
-        string command = ReadLine() ?? "";
-
-        if (command.Equals("/start"))
+        try
         {
+          WriteLine("\nВведите команду:");
+          string command = ReadLine() ?? "";
+
+          if (command.Equals("/start"))
+          {
+            if (!started)
+            {
+              name = WelcomeToProgram();
+              started = true;
+            }
+            else
+            {
+              WriteLine($"{name}, программа уже работает");
+            }
+
+            continue;
+          }
+
           if (!started)
           {
-            name = WelcomeToProgram();
-            started = true;
+            WriteLine("Для доступа к другим командам сначала введите '/start'.");
+            continue;
           }
-          else
+
+          string[] parts = command.Split(' ', 2);
+          string commandName = parts[0];
+          string echoText = parts.Length > 1 ? parts[1].Trim() : "";
+
+          switch (commandName)
           {
-            WriteLine($"{name}, программа уже работает");
+            case "/help":
+              ShowHelp(name);
+              break;
+
+            case "/info":
+              ShowInfo(name);
+              break;
+
+            case "/echo":
+              EnterText(name, echoText);
+              break;
+
+            case "/clear":
+              Clear();
+              break;
+
+            case "/menu":
+              WriteLine($"\nСписок команд: \n{ListOfCommandExtended}");
+              break;
+
+            case "/addtask":
+              AddTask();
+              break;
+
+            case "/showtask":
+              ShowTask();
+              break;
+
+            case "/removetask":
+              RemoveTask();
+              break;
+
+            case "/exit":
+              ExitFromProgram(name);
+              return;
+
+            default:
+              WriteLine("Неверно набрана команда.");
+              break;
           }
 
-          continue;
         }
-
-        if (!started)
+        catch (ArgumentException ex)
         {
-          WriteLine("Для доступа к другим командам сначала введите '/start'.");
-          continue;
+          WriteLine($"Ошибка: {ex.Message}");
+          ReadKey();
         }
-
-        string[] parts = command.Split(' ', 2);
-        string commandName = parts[0];
-        string echoText = parts.Length > 1 ? parts[1].Trim() : "";
-
-        //if (command.StartsWith("/echo"))
-        //{
-        //  string echoText = command[5..].Trim();
-
-        //  if (string.IsNullOrWhiteSpace(echoText))
-        //  {
-        //    WriteLine($"{name}, после /echo необходимо указать текст.");
-        //  }
-        //  else
-        //  {
-        //    WriteLine($"{echoText}");
-        //  }
-        //  continue;
-        //}
-
-        switch (commandName)
+        catch (TaskCountLimitException ex)
         {
-          case "/help":
-            ShowHelp(name);
-            break;
-
-          case "/info":
-            ShowInfo(name);
-            break;
-
-          case "/echo":
-            EnterText(name, echoText);
-            break;
-
-          case "/clear":
-            Clear();
-            break;
-
-          case "/menu":
-            WriteLine($"\nСписок команд: \n{ListOfCommandExtended}");
-            break;
-
-          case "/addtask":
-            AddTask();
-            break;
-
-          case "/showtask":
-            ShowTask();
-            break;
-
-          case "/removetask":
-            RemoveTask();
-            break;
-
-          case "/exit":
-            ExitFromProgram(name);
-            return;
-
-          default:
-            WriteLine("Неверно набрана команда.");
-            break;
+          Console.WriteLine(ex.Message);
+          ReadKey();
         }
-
+        catch (TaskLengthLimitException ex)
+        {
+          WriteLine(ex.Message);
+        }
+        catch (DuplicateTaskException ex)
+        {
+          WriteLine(ex.Message);
+        }
+        catch (Exception error)
+        {
+          Console.WriteLine("Произошла непредвиденная ошибка");
+          Console.WriteLine($"Type: {error.GetType()}");
+          Console.WriteLine($"Message: {error.Message}");
+          Console.WriteLine($"StackTrace: {error.StackTrace}");
+          Console.WriteLine($"InnerException: {error.InnerException}");
+          ReadKey();
+        }
       }
     }
 
@@ -114,16 +130,51 @@ namespace bot
     private static string WelcomeToProgram()
     {
       WriteLine("\nКак тебя зовут?");
-      string name = Console.ReadLine() ?? "";
+      string name = ReadLine() ?? "";
+
+      ValidateString(name);
+
+      WriteLine("Введите максимально допустимое количество задач: ");
+      string input = ReadLine() ?? "";
+      taskCountLimit = ParseAndValidate(input, 1, 100);
+
+      WriteLine("Введите максимально допустимую длину задачи");
+      string lenghtTask = ReadLine() ?? "";
+      taskLengthLimit = ParseAndValidate(lenghtTask, 1, 100);
+
       WriteLine($"\nПривет, {name}!\nВыбери команду: \n{ListOfCommandExtended}");
       return name;
     }
     //ПРИВЕТСТВИЕ
 
+    //ПРОВЕРКИ
+    private static int ParseAndValidate(string? str, int min, int max)
+    {
+      if (!int.TryParse(str, out int value))
+      {
+        throw new ArgumentException("Значение должно быть числом");
+      }
+      if (value < min || value > max)
+      {
+        throw new ArgumentException($"Значение должно быть от {min} до {max}");
+      }
+
+      return value;
+     }
+
+     private static void ValidateString(string? str)
+     {
+      if (string.IsNullOrWhiteSpace(str))
+      {
+        throw new ArgumentException("Строка не может пустой");
+      }
+     }
+    //ПРОВЕРКИ
+
     //ВЫХОД
     private static void ExitFromProgram(string name)
     {
-       WriteLine($"До свидания, {name}");
+      WriteLine($"До свидания, {name}");
     }
     //ВЫХОД
 
@@ -168,8 +219,29 @@ namespace bot
     //ДОБАВЛЕНИЕ ЗАДАЧИ
     private static void AddTask()
     {
+      if (tasks.Count >= taskCountLimit)
+      {
+        throw new TaskCountLimitException(taskCountLimit);
+      }
       WriteLine("Введите описание задачи");
-      string task = ReadLine();
+      string task = ReadLine() ?? "";
+
+      if (string.IsNullOrWhiteSpace(task))
+      {
+        WriteLine("Описание задачи не может быть пустым");
+        return;
+      }
+
+      if (task.Length > taskLengthLimit)
+      {
+        throw new TaskLengthLimitException(task.Length, taskLengthLimit);
+      }
+
+      if (tasks.Contains(task))
+      {
+        throw new DuplicateTaskException(task);
+      }
+
       tasks.Add(task);
       WriteLine("Задача добавлена!");
     }
@@ -222,5 +294,27 @@ namespace bot
       WriteLine("Задача успешно удалена");
     }
     //УДАЛЕНИЕ ЗАДАЧИ
+
+    public class TaskCountLimitException : Exception
+    {
+      public TaskCountLimitException(int taskCountLimit) : base($"Превышено максимальное количество задач равное {taskCountLimit}")
+      {
+      }
+    }
+
+    public class TaskLengthLimitException : Exception
+    {
+      public TaskLengthLimitException(int lengthTask, int taskLengthLimit) : base($"Длина задачи {lengthTask} превышает максимально допустимое значение {taskLengthLimit}")
+      {
+      }
+    }
+
+    public class DuplicateTaskException : Exception
+    {
+      public DuplicateTaskException(string task) : base($"Задача '{task}' уже существует.")
+      {
+      }
+    }
+
   }
 }
