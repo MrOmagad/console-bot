@@ -16,6 +16,8 @@ namespace bot
     {
       WriteLine($"Привет!\n{ListOfCommands}");
 
+      SetTaskLimits();
+
       bool started = false;
       bool isRunning = true;
       string name = "";
@@ -96,11 +98,6 @@ namespace bot
           }
 
         }
-        catch (ArgumentException ex)
-        {
-          WriteLine($"Ошибка: {ex.Message}");
-          ReadKey();
-        }
         catch (TaskCountLimitException ex)
         {
           Console.WriteLine(ex.Message);
@@ -113,6 +110,11 @@ namespace bot
         catch (DuplicateTaskException ex)
         {
           WriteLine(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+          WriteLine($"Ошибка: {ex.Message}");
+          ReadKey();
         }
         catch (Exception error)
         {
@@ -133,14 +135,6 @@ namespace bot
       string name = ReadLine() ?? "";
 
       ValidateString(name);
-
-      WriteLine("Введите максимально допустимое количество задач: ");
-      string input = ReadLine() ?? "";
-      taskCountLimit = ParseAndValidate(input, 1, 100);
-
-      WriteLine("Введите максимально допустимую длину задачи");
-      string lenghtTask = ReadLine() ?? "";
-      taskLengthLimit = ParseAndValidate(lenghtTask, 1, 100);
 
       WriteLine($"\nПривет, {name}!\nВыбери команду: \n{ListOfCommandExtended}");
       return name;
@@ -170,6 +164,19 @@ namespace bot
       }
      }
     //ПРОВЕРКИ
+
+    //ЛИМИТЫ
+    private static void SetTaskLimits()
+    {
+      WriteLine("Введите максимально допустимое количество задач: ");
+      string input = ReadLine() ?? "";
+      taskCountLimit = ParseAndValidate(input, 1, 100);
+
+      WriteLine("Введите максимально допустимую длину задачи");
+      string lenghtTask = ReadLine() ?? "";
+      taskLengthLimit = ParseAndValidate(lenghtTask, 1, 100);
+    }
+    //ЛИМИТЫ
 
     //ВЫХОД
     private static void ExitFromProgram(string name)
@@ -294,27 +301,5 @@ namespace bot
       WriteLine("Задача успешно удалена");
     }
     //УДАЛЕНИЕ ЗАДАЧИ
-
-    public class TaskCountLimitException : Exception
-    {
-      public TaskCountLimitException(int taskCountLimit) : base($"Превышено максимальное количество задач равное {taskCountLimit}")
-      {
-      }
-    }
-
-    public class TaskLengthLimitException : Exception
-    {
-      public TaskLengthLimitException(int lengthTask, int taskLengthLimit) : base($"Длина задачи {lengthTask} превышает максимально допустимое значение {taskLengthLimit}")
-      {
-      }
-    }
-
-    public class DuplicateTaskException : Exception
-    {
-      public DuplicateTaskException(string task) : base($"Задача '{task}' уже существует.")
-      {
-      }
-    }
-
   }
 }
