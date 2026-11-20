@@ -6,11 +6,14 @@ namespace bot
   internal class Program
   {
     private const string ListOfCommands = "/start\n/help\n/info\n/menu\n/clear\n/exit";
-    private const string ListOfCommandExtended = "/start\n/help\n/info\n/menu\n/clear\n/echo [текст]\n/addtask\n/showtask\n/removetask\n/exit\n";
+    private const string ListOfCommandExtended = "/start\n/help\n/info\n/menu\n/clear\n/echo [текст]\n/addtask\n/showtask\n/showalltasks\n/completetask [ID]\n/removetask\n/exit\n";
 
-    static List<string> tasks = new List<string>();
+    static List<ToDoItem> tasks = new List<ToDoItem>();
     static int taskCountLimit;
     static int taskLengthLimit;
+    static ToDoUser? currentUser = null;
+
+
 
     static void Main(string[] args)
     {
@@ -20,7 +23,6 @@ namespace bot
 
       bool started = false;
       bool isRunning = true;
-      string name = "";
 
       while (isRunning)
       {
@@ -33,12 +35,12 @@ namespace bot
           {
             if (!started)
             {
-              name = WelcomeToProgram();
+              currentUser = WelcomeToProgram();
               started = true;
             }
             else
             {
-              WriteLine($"{name}, программа уже работает");
+              WriteLine($"{currentUser!.TelegramUserName}, программа уже работает");
             }
 
             continue;
@@ -57,15 +59,15 @@ namespace bot
           switch (commandName)
           {
             case "/help":
-              ShowHelp(name);
+              ShowHelp(currentUser!.TelegramUserName);
               break;
 
             case "/info":
-              ShowInfo(name);
+              ShowInfo(currentUser!.TelegramUserName);
               break;
 
             case "/echo":
-              EnterText(name, echoText);
+              EnterText(currentUser!.TelegramUserName, echoText);
               break;
 
             case "/clear":
@@ -80,8 +82,23 @@ namespace bot
               AddTask();
               break;
 
-            case "/showtask":
+            case "/showtasks":
               ShowTask();
+              break;
+
+            case "/showalltasks":
+              ShowAllTasks();
+              break;
+
+            case "/completetask":
+              if (string.IsNullOrWhiteSpace(echoText))
+              {
+                WriteLine("Укажите ID задачи. Пример: /completetask 12345678-1234-1234-1234-123456789012");
+              }
+              else
+              {
+                CompleteTask(echoText);
+              }
               break;
 
             case "/removetask":
@@ -89,7 +106,7 @@ namespace bot
               break;
 
             case "/exit":
-              ExitFromProgram(name);
+              ExitFromProgram(currentUser!.TelegramUserName);
               return;
 
             default:
@@ -129,15 +146,17 @@ namespace bot
     }
 
     //ПРИВЕТСТВИЕ
-    private static string WelcomeToProgram()
+    private static ToDoUser WelcomeToProgram()
     {
       WriteLine("\nКак тебя зовут?");
       string name = ReadLine() ?? "";
 
       ValidateString(name);
 
-      WriteLine($"\nПривет, {name}!\nВыбери команду: \n{ListOfCommandExtended}");
-      return name;
+      ToDoUser user = new ToDoUser(name);
+
+      WriteLine($"\nПривет, {user.TelegramUserName!}\nТвой ID: {user.UserId}\nДата регистрации: {user.RegisteredAt}\nВыбери команду: {ListOfCommandExtended}");
+      return user;
     }
     //ПРИВЕТСТВИЕ
 
@@ -154,15 +173,15 @@ namespace bot
       }
 
       return value;
-     }
+    }
 
-     private static void ValidateString(string? str)
-     {
+    private static void ValidateString(string? str)
+    {
       if (string.IsNullOrWhiteSpace(str))
       {
         throw new ArgumentException("Строка не может пустой");
       }
-     }
+    }
     //ПРОВЕРКИ
 
     //ЛИМИТЫ
@@ -209,6 +228,8 @@ namespace bot
         "/clear - очистить консоль\n" +
         "/addtask - добавление задачи\n" +
         "/showtask - список задач\n" +
+        "/showalltask - показать все задачи" +
+        "/completetask [ID] - завершить задачу по id" +
         "/removetask - удаление задачи\n" +
         "/exit - выйти из программы\n"
       );
@@ -244,61 +265,149 @@ namespace bot
         throw new TaskLengthLimitException(task.Length, taskLengthLimit);
       }
 
-      if (tasks.Contains(task))
+      for (int i = 0; i < tasks.Count; i++)
       {
-        throw new DuplicateTaskException(task);
+        if (tasks[i].Name == task)
+        {
+          throw new DuplicateTaskException(task);
+        }
       }
 
-      tasks.Add(task);
+      ToDoItem newTask = new ToDoItem(currentUser!, task);
+
+      tasks.Add(newTask);
       WriteLine("Задача добавлена!");
+      WriteLine($"ID задачи: {newTask.Id}");
     }
     //ДОБАВЛЕНИЕ ЗАДАЧИ
 
-    //ВЫВОД СПИСКА ЗАДАЧ
+    //ВЫВОД СПИСКА АКТИВНЫХ ЗАДАЧ
     private static bool ShowTask()
+    {
+      bool hasActiveTasks = false;
+      WriteLine("Список активных задач:\n");
+      for (int i = 0; i < tasks.Count; i++)
+      {
+        if (tasks[i].State == ToDoItemState.Active)
+        {
+          hasActiveTasks = true;
+
+          WriteLine($"Название: {tasks[i].Name}");
+          WriteLine($"Дата создания: {tasks[i].CreatedAt}");
+          WriteLine($"ID: {tasks[i].Id}\n");
+        }
+      }
+      if (!hasActiveTasks)
+      {
+        WriteLine("У вас нет активных задач");
+      }
+
+      return !hasActiveTasks;
+    }
+    //ВЫВОД СПИСКА АКТИВНЫХ ЗАДАЧ
+
+    //ВЫВОД СПИСКА ВСЕХ ЗАДАЧ
+    private static void ShowAllTasks()
     {
       if (tasks.Count == 0)
       {
-        WriteLine("У вас нет задач");
-        return true;
+        WriteLine("У вас пока нет задач");
+        return;
       }
 
-      WriteLine("Список задач:\n");
+      WriteLine("Полный список задач:\n");
+      for (int i = 0; i < tasks.Count; i++)
+      {
+        WriteLine($"Название: {tasks[i].Name}");
+        WriteLine($"Дата создания: {tasks[i].CreatedAt}");
+        WriteLine($"ID: {tasks[i].Id}");
+        WriteLine($"Статус: {tasks[i].State}\n");
+      }
+    }
+    //ВЫВОД СПИСКА ВСЕХ ЗАДАЧ
+
+    private static void CompleteTask(string taskId)
+    {
+      if (!Guid.TryParse(taskId, out Guid id))
+      {
+        WriteLine("Некорректный id задачи");
+        return;
+      }
 
       for (int i = 0; i < tasks.Count; i++)
       {
-        WriteLine($"{i + 1}. {tasks[i]}");
+        if (tasks[i].Id == id)
+        {
+          if (tasks[i].State == ToDoItemState.Completed)
+          {
+            WriteLine("Эта задача уже завершена");
+            return;
+          }
+          tasks[i].State = ToDoItemState.Completed;
+          tasks[i].StateChangedAt = DateTime.UtcNow;
+
+          WriteLine("Задача успешно завершена");
+          return;
+        }
       }
-      return false;
+      WriteLine("Задача с таким ID не найдена");
     }
-    //ВЫВОД СПИСКА ЗАДАЧ
 
     //УДАЛЕНИЕ ЗАДАЧИ 
     private static void RemoveTask()
     {
-      if (ShowTask())
+      int activeTaskCount = 0;
+
+      for (int i = 0; i < tasks.Count; i++)
       {
-        WriteLine("Список задач пуст. Удалять нечего");
+        if (tasks[i].State == ToDoItemState.Active)
+        {
+          activeTaskCount++;
+        }
+      }
+
+      if (activeTaskCount == 0)
+      {
+        WriteLine("Нет активных задач для удаления");
         return;
       }
 
-      WriteLine("\nВведите номер задачи для удаления: ");
-      string input = ReadLine();
+      WriteLine("Выберите номер активной задачи для удаления:");
 
-      if (!int.TryParse(input, out int number))
+      int displayedNumber = 0;
+
+      for (int i = 0; i < tasks.Count; i++)
       {
-        WriteLine("Нужно ввести число.");
+        if (tasks[i].State == ToDoItemState.Active)
+        {
+          displayedNumber++;
+          WriteLine($"{displayedNumber}. {tasks[i].Name}");
+        }
+      }
+
+      if (!int.TryParse(ReadLine(), out int number) ||
+          number < 1 || number > activeTaskCount)
+      {
+        WriteLine("Некорректный номер задачи");
         return;
       }
 
-      if (number < 1 || number > tasks.Count)
-      {
-        WriteLine("Неверный номер задачи.");
-        return;
-      }
+      displayedNumber = 0;
 
-      tasks.RemoveAt(number - 1);
-      WriteLine("Задача успешно удалена");
+      for (int i = 0; i < tasks.Count; i++)
+      {
+        if (tasks[i].State == ToDoItemState.Active)
+        {
+          displayedNumber++;
+
+          if (displayedNumber == number)
+          {
+            tasks.RemoveAt(i);
+            WriteLine("Задача успешно удалена");
+            return;
+          }
+        }
+      }
     }
     //УДАЛЕНИЕ ЗАДАЧИ
   }
